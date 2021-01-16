@@ -44,7 +44,7 @@ async fn check_rainfall(appid: String, slack_token: String, coordinates: String)
     for weather in v["Feature"][0]["Property"]["WeatherList"]["Weather"].as_array().unwrap().iter() {
         if let Some(rainfail) = weather["Rainfall"].as_f64() {
             if 0.0 < rainfail {
-                let message = format!("date:{}, {}", weather["Date"], weather["Rainfall"]);
+                let message = format!("date:{}, rainfail: {}", weather["Date"], weather["Rainfall"]);
                 println!("{}", message);
                 post2slack(slack_token, message).await?;
                 break;
