@@ -37,40 +37,46 @@ fn print_usage(program: &str, opts: Options) {
     print!("{}", opts.usage(&brief));
 }
 
+async fn check_rainfall(appid: String, slack_token: String, coordinates: String) -> surf::Result<()> {
+    let url = format!("https://map.yahooapis.jp/weather/V1/place?output=json&coordinates={}&appid={}", coordinates, appid);
+    let data = surf::get(url).recv_string().await?;
+    let v: Value = serde_json::from_str(&data)?;
+    for weather in v["Feature"][0]["Property"]["WeatherList"]["Weather"].as_array().unwrap().iter() {
+        if let Some(rainfail) = weather["Rainfall"].as_f64() {
+            if 0.0 < rainfail {
+                let message = format!("date:{}, {}", weather["Date"], weather["Rainfall"]);
+                println!("{}", message);
+                post2slack(slack_token, message).await?;
+                break;
+            }
+        }
+    }
+    Ok(())
+}
+
 #[async_std::main]
 async fn main() -> surf::Result<()> {
     let args: Vec<String> = env::args().collect();
     let mut opts = Options::new();
     opts.optopt("i", "appid", "Yahho! JAPAN appid(Required)", "APPID");
     opts.optopt("s", "slack-token", "Slack Token(Required)", "TOKEN");
+    opts.optopt("c", "coordinates", "latitude,longitude(Required)", "LATITUDE,LONGITUDE");
     opts.optflag("h", "help", "print this help menu");
     
-    let matches = match opts.parse(&args[1..]) {
+    let m = match opts.parse(&args[1..]) {
         Ok(m) => { m }
         Err(f) => { panic!(f.to_string()) }
     };
     
-    if matches.opt_present("h") {
+    if m.opt_present("h") {
         let program = args[0].clone();
         print_usage(&program, opts);
         return Ok(());
     }
 
-    match (matches.opt_str("i"), matches.opt_str("s")) {
-        (Some(appid), Some(slack_token)) => {
-            let url = format!("https://map.yahooapis.jp/weather/V1/place?output=json&coordinates=136.7247468,35.4064446&appid={}", appid);
-            let data = surf::get(url).recv_string().await?;
-            let v: Value = serde_json::from_str(&data)?;
-            for weather in v["Feature"][0]["Property"]["WeatherList"]["Weather"].as_array().unwrap().iter() {
-                if let Some(rainfail) = weather["Rainfall"].as_f64() {
-                    if 0.0 < rainfail {
-                        let message = format!("date:{}, {}", weather["Date"], weather["Rainfall"]);
-                        println!("{}", message);
-                        post2slack(slack_token, message).await?;
-                        break;
-                    }
-                }
-            }
+    match (m.opt_str("i"), m.opt_str("s"), m.opt_str("c")) {
+        (Some(appid), Some(slack_token), Some(coordinates)) => {
+            check_rainfall(appid, slack_token, coordinates).await?
         },
         _ => println!("No appid"),
     }
