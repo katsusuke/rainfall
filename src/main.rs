@@ -1,9 +1,10 @@
 use std::env;
 use std::str::FromStr;
 use surf;
-use serde_json::{Value};
 use getopts::Options;
 use serde::{Deserialize, Serialize};
+
+mod yahooapi;
 
 #[derive(Deserialize, Serialize)]
 struct SlackPostMessagePayload {
@@ -32,19 +33,13 @@ async fn post2slack(token: String, text: String) -> surf::Result<()> {
     Ok(())
 }
 
-async fn getweather(coordinates: String, appid: String) -> surf::Result<Value> {
-    let url = format!("https://map.yahooapis.jp/weather/V1/place?output=json&coordinates={}&appid={}", coordinates, appid);
-    let data = surf::get(url).recv_string().await?;
-    Ok(serde_json::from_str(&data)?)
-}
-
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} FILE [options]", program);
     print!("{}", opts.usage(&brief));
 }
 
 async fn check_rainfall(watch: bool, appid: String, slack_token: String, coordinates: String) -> surf::Result<()> {
-    let v = getweather(coordinates, appid).await?;
+    let v = yahooapi::getweather(coordinates, appid).await?;
     for weather in v["Feature"][0]["Property"]["WeatherList"]["Weather"].as_array().unwrap().iter() {
         if let Some(rainfail) = weather["Rainfall"].as_f64() {
             if 0.0 < rainfail {
