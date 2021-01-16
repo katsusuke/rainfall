@@ -39,16 +39,10 @@ fn print_usage(program: &str, opts: Options) {
 }
 
 async fn check_rainfall(watch: bool, appid: String, slack_token: String, coordinates: String) -> surf::Result<()> {
-    let v = yahooapi::getweather(coordinates, appid).await?;
-    for weather in v["Feature"][0]["Property"]["WeatherList"]["Weather"].as_array().unwrap().iter() {
-        if let Some(rainfail) = weather["Rainfall"].as_f64() {
-            if 0.0 < rainfail {
-                let message = format!("date:{}, rainfail: {}", weather["Date"], weather["Rainfall"]);
-                println!("{}", message);
-                post2slack(slack_token, message).await?;
-                break;
-            }
-        }
+    if let Some(w) = yahooapi::find_rainfail(appid, coordinates).await? {
+        let message = format!("date:{}, rainfail: {}", w.date.to_string(), w.rainfail);
+        println!("{}", message);
+        post2slack(slack_token, message).await?;
     }
     Ok(())
 }
