@@ -32,6 +32,11 @@ async fn post2slack(token: String, text: String) -> surf::Result<()> {
     Ok(())
 }
 
+fn print_usage(program: &str, opts: Options) {
+    let brief = format!("Usage: {} FILE [options]", program);
+    print!("{}", opts.usage(&brief));
+}
+
 #[async_std::main]
 async fn main() -> surf::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -44,6 +49,12 @@ async fn main() -> surf::Result<()> {
         Ok(m) => { m }
         Err(f) => { panic!(f.to_string()) }
     };
+    
+    if matches.opt_present("h") {
+        let program = args[0].clone();
+        print_usage(&program, opts);
+        return Ok(());
+    }
 
     match (matches.opt_str("i"), matches.opt_str("s")) {
         (Some(appid), Some(slack_token)) => {
