@@ -32,15 +32,19 @@ async fn post2slack(token: String, text: String) -> surf::Result<()> {
     Ok(())
 }
 
+async fn getweather(coordinates: String, appid: String) -> surf::Result<Value> {
+    let url = format!("https://map.yahooapis.jp/weather/V1/place?output=json&coordinates={}&appid={}", coordinates, appid);
+    let data = surf::get(url).recv_string().await?;
+    Ok(serde_json::from_str(&data)?)
+}
+
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} FILE [options]", program);
     print!("{}", opts.usage(&brief));
 }
 
-async fn check_rainfall(appid: String, slack_token: String, coordinates: String) -> surf::Result<()> {
-    let url = format!("https://map.yahooapis.jp/weather/V1/place?output=json&coordinates={}&appid={}", coordinates, appid);
-    let data = surf::get(url).recv_string().await?;
-    let v: Value = serde_json::from_str(&data)?;
+async fn check_rainfall(watch: bool, appid: String, slack_token: String, coordinates: String) -> surf::Result<()> {
+    let v = getweather(coordinates, appid).await?;
     for weather in v["Feature"][0]["Property"]["WeatherList"]["Weather"].as_array().unwrap().iter() {
         if let Some(rainfail) = weather["Rainfall"].as_f64() {
             if 0.0 < rainfail {
@@ -61,6 +65,7 @@ async fn main() -> surf::Result<()> {
     opts.optopt("i", "appid", "Yahho! JAPAN appid(Required)", "APPID");
     opts.optopt("s", "slack-token", "Slack Token(Required)", "TOKEN");
     opts.optopt("c", "coordinates", "latitude,longitude(Required)", "LATITUDE,LONGITUDE");
+    opts.optflag("w", "watch", "Service mode");
     opts.optflag("h", "help", "print this help menu");
     
     let m = match opts.parse(&args[1..]) {
@@ -76,7 +81,7 @@ async fn main() -> surf::Result<()> {
 
     match (m.opt_str("i"), m.opt_str("s"), m.opt_str("c")) {
         (Some(appid), Some(slack_token), Some(coordinates)) => {
-            check_rainfall(appid, slack_token, coordinates).await?
+            check_rainfall(m.opt_present("w"), appid, slack_token, coordinates).await?
         },
         _ => println!("No appid"),
     }
