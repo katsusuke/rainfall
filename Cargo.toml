@@ -8,5 +8,6 @@ edition = "2018"
 
 [dependencies]
 async-std = {version="1.9.0", features = ["attributes"]}
+getopts = "0.2.21"
 serde_json = "1.0.61"
 surf = "2.1.0"
