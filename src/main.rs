@@ -10,7 +10,7 @@ fn print_usage(program: &str, opts: Options) {
     print!("{}", opts.usage(&brief));
 }
 
-async fn check_rainfall(watch: bool, appid: String, slack_token: String, coordinates: String) -> surf::Result<()> {
+async fn check_rainfall(watch: bool, appid: String, coordinates: String, slack_token: String) -> surf::Result<()> {
     if let Some(w) = yahooapi::find_rainfail(appid, coordinates).await? {
         let message = format!("date:{}, rainfail: {}", w.date.to_string(), w.rainfail);
         println!("{}", message);
@@ -24,8 +24,8 @@ async fn main() -> surf::Result<()> {
     let args: Vec<String> = env::args().collect();
     let mut opts = Options::new();
     opts.optopt("i", "appid", "Yahho! JAPAN appid(Required)", "APPID");
-    opts.optopt("s", "slack-token", "Slack Token(Required)", "TOKEN");
     opts.optopt("c", "coordinates", "latitude,longitude(Required)", "LATITUDE,LONGITUDE");
+    opts.optopt("s", "slack-token", "Slack Token(Required)", "TOKEN");
     opts.optflag("w", "watch", "Service mode");
     opts.optflag("h", "help", "print this help menu");
     
@@ -40,7 +40,7 @@ async fn main() -> surf::Result<()> {
         return Ok(());
     }
 
-    match (m.opt_str("i"), m.opt_str("s"), m.opt_str("c")) {
+    match (m.opt_str("i"), m.opt_str("c"), m.opt_str("s")) {
         (Some(appid), Some(slack_token), Some(coordinates)) => {
             check_rainfall(m.opt_present("w"), appid, slack_token, coordinates).await?
         },
