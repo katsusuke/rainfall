@@ -36,8 +36,8 @@ async fn post2slack(token: String, text: String) -> surf::Result<()> {
 async fn main() -> surf::Result<()> {
     let args: Vec<String> = env::args().collect();
     let mut opts = Options::new();
-    opts.optopt("i", "appid", "Yahho! JAPAN appid", "APPID");
-    opts.optopt("s", "slack-token", "Slack Token", "TOKEN");
+    opts.optopt("i", "appid", "Yahho! JAPAN appid(Required)", "APPID");
+    opts.optopt("s", "slack-token", "Slack Token(Required)", "TOKEN");
     opts.optflag("h", "help", "print this help menu");
     
     let matches = match opts.parse(&args[1..]) {
