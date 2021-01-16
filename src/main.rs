@@ -6,7 +6,7 @@ use getopts::Options;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
-struct SlackPostMessageBody {
+struct SlackPostMessagePayload {
     token: String,
     channel: String,
     text: String,
@@ -16,7 +16,7 @@ struct SlackPostMessageBody {
 
 async fn post2slack(token: String, text: String) -> surf::Result<()> {
     let url = "https://slack.com/api/chat.postMessage";
-    let body = SlackPostMessageBody {
+    let body = SlackPostMessagePayload {
         token: token,
         channel: "#weather".into(),
         text: text,
