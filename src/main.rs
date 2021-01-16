@@ -1,37 +1,9 @@
 use std::env;
-use std::str::FromStr;
 use surf;
 use getopts::Options;
-use serde::{Deserialize, Serialize};
 
 mod yahooapi;
-
-#[derive(Deserialize, Serialize)]
-struct SlackPostMessagePayload {
-    token: String,
-    channel: String,
-    text: String,
-    icon_emoji: String,
-    username: String
-}
-
-async fn post2slack(token: String, text: String) -> surf::Result<()> {
-    let url = "https://slack.com/api/chat.postMessage";
-    let body = SlackPostMessagePayload {
-        token: token,
-        channel: "#weather".into(),
-        text: text,
-        icon_emoji: ":rain_cloud:".into(),
-        username: "雨ですよBot".into()
-    };
-    let mime = surf::http::Mime::from_str("application/json; charset=utf-8").unwrap();
-    let data = surf::post(url)
-        .query(&body)?
-        .content_type(mime)
-        .recv_string().await?;
-    println!("data: {}", data);
-    Ok(())
-}
+mod slackapi;
 
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} FILE [options]", program);
@@ -42,7 +14,7 @@ async fn check_rainfall(watch: bool, appid: String, slack_token: String, coordin
     if let Some(w) = yahooapi::find_rainfail(appid, coordinates).await? {
         let message = format!("date:{}, rainfail: {}", w.date.to_string(), w.rainfail);
         println!("{}", message);
-        post2slack(slack_token, message).await?;
+        slackapi::post2slack(slack_token, message).await?;
     }
     Ok(())
 }
