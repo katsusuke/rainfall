@@ -68,6 +68,6 @@ async fn main() {
                 check_rainfall(&appid, &slack_token, &coordinates).await;
             }
         },
-        _ => println!("No appid"),
+        _ => println!("No required options"),
     }
 }
