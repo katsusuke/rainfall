@@ -6,7 +6,7 @@ pub fn parse_yahoo_date(string: &str) -> chrono::ParseResult<NaiveDateTime> {
     NaiveDateTime::parse_from_str(string, "%Y%m%d%H%M")
 }
 
-pub async fn getweather(coordinates: String, appid: String) -> surf::Result<Value> {
+pub async fn getweather(coordinates: &str, appid: &str) -> surf::Result<Value> {
     let url = format!("https://map.yahooapis.jp/weather/V1/place?output=json&coordinates={}&appid={}", coordinates, appid);
     let data = surf::get(url).recv_string().await?;
     Ok(serde_json::from_str(&data)?)
@@ -18,7 +18,7 @@ pub struct Weather {
     pub rainfail: f64
 }
 
-pub async fn find_rainfail(appid: String, coordinates: String) -> Result<Option<Weather>, surf::Error> {
+pub async fn find_rainfail(appid: &str, coordinates: &str) -> Result<Option<Weather>, surf::Error> {
     let v = getweather(coordinates, appid).await?;
     for weather in v["Feature"][0]["Property"]["WeatherList"]["Weather"].as_array().unwrap().iter() {
         if let (Some(rainfail), Some(date_str)) = (weather["Rainfall"].as_f64(), weather["Date"].as_str()) {
