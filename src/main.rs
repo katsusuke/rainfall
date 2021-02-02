@@ -3,7 +3,6 @@ use std::time::Duration;
 use getopts::Options;
 use async_std::task;
 use chrono::prelude::*;
-use chrono::format::StrftimeItems;
 
 mod yahooapi;
 mod slackapi;
@@ -24,8 +23,7 @@ fn split_coordinates(coordinates: &str) -> Option<(&str, &str)> {
 
 fn yahoo_url(coordinates: &str, date: &str) -> String {
     if let Some((lat, lon)) = split_coordinates(coordinates) {
-        let url = format!("https://weather.yahoo.co.jp/weather/zoomradar/?lat={}&lon={}&z=15&t={}", lat.to_string(), lon.to_string(), date.to_string());
-        return url.to_string();
+        return format!("https://weather.yahoo.co.jp/weather/zoomradar/?lat={}&lon={}&z=15&t={}", lat.to_string(), lon.to_string(), date.to_string());
     } else {
         return "".to_string();
     }
