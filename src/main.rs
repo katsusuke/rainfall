@@ -3,6 +3,7 @@ use std::time::Duration;
 use getopts::Options;
 use async_std::task;
 use chrono::prelude::*;
+use chrono::format::StrftimeItems;
 
 mod yahooapi;
 mod slackapi;
@@ -12,16 +13,35 @@ fn print_usage(program: &str, opts: Options) {
     print!("{}", opts.usage(&brief));
 }
 
-fn message_for_rainfail(w: &yahooapi::Weather) -> String {
-    let message = format!("date:{}, rainfail: {}", w.date.to_string(), w.rainfail);
-    println!("{}", message);
+fn split_coordinates(coordinates: &str) -> Option<(&str, &str)> {
+    let a = coordinates.split(',').collect::<Vec<&str>>();
+    if let &[lat, lon] = &a[..] {
+        return Some((lat, lon));
+    } else {
+        return None;
+    }
+}
+
+fn yahoo_url(coordinates: &str, date: &str) -> String {
+    if let Some((lat, lon)) = split_coordinates(coordinates) {
+        let url = format!("https://weather.yahoo.co.jp/weather/zoomradar/?lat={}&lon={}&z=15&t={}", lat.to_string(), lon.to_string(), date.to_string());
+        return url.to_string();
+    } else {
+        return "".to_string();
+    }
+}
+
+fn message_for_rainfail(w: &yahooapi::Weather, coordinates: &str) -> String {
+    let date = w.date.format("%Y%m%d%H%M%S").to_string();
+    let url = yahoo_url(coordinates, &date);
+    let message = format!("date:{}, rainfail: {} {}", w.date.to_string(), w.rainfail, url);
     return message;
 }
 
 async fn check_rainfall(appid: &str, coordinates: &str, slack_token: &str, channel: &str) -> Duration {
     let default_wait = Duration::from_secs(60 * 10);
     if let Ok(Some(w)) = yahooapi::find_rainfail(appid, coordinates).await {
-        let message = message_for_rainfail(&w);
+        let message = message_for_rainfail(&w, coordinates);
         let _ = slackapi::post2slack(slack_token, channel, message).await;
         let now = Local::now().naive_utc();
         let duration = (w.date + chrono::Duration::seconds(60 * 60 * 6)) - now;
