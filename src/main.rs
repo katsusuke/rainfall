@@ -18,11 +18,11 @@ fn message_for_rainfail(w: &yahooapi::Weather) -> String {
     return message;
 }
 
-async fn check_rainfall(appid: &str, coordinates: &str, slack_token: &str) -> Duration {
+async fn check_rainfall(appid: &str, coordinates: &str, slack_token: &str, channel: &str) -> Duration {
     let default_wait = Duration::from_secs(60 * 10);
     if let Ok(Some(w)) = yahooapi::find_rainfail(appid, coordinates).await {
         let message = message_for_rainfail(&w);
-        let _ = slackapi::post2slack(slack_token, message).await;
+        let _ = slackapi::post2slack(slack_token, channel, message).await;
         let now = Local::now().naive_utc();
         let duration = (w.date + chrono::Duration::seconds(60 * 60 * 6)) - now;
         duration.to_std().unwrap_or(default_wait)
@@ -31,9 +31,9 @@ async fn check_rainfall(appid: &str, coordinates: &str, slack_token: &str) -> Du
     }
 }
 
-async fn watch(appid: &str, coordinates: &str, slack_token: &str) -> Duration {
+async fn watch(appid: &str, coordinates: &str, slack_token: &str, channel: &str) -> Duration {
     loop {
-        let wait = check_rainfall(appid, coordinates, slack_token).await;
+        let wait = check_rainfall(appid, coordinates, slack_token, channel).await;
         println!("sleep: {}secs", wait.as_secs());
         task::sleep(wait).await;
     }
@@ -46,6 +46,7 @@ async fn main() {
     opts.optopt("i", "appid", "Yahho! JAPAN appid(Required)", "APPID");
     opts.optopt("c", "coordinates", "latitude,longitude(Required)", "LATITUDE,LONGITUDE");
     opts.optopt("s", "slack-token", "Slack Token(Required)", "TOKEN");
+    opts.optopt("C", "slack-channel", "Slack Channel(default: #weather)", "TOKEN");
     opts.optflag("w", "watch", "Service mode");
     opts.optflag("h", "help", "print this help menu");
     
@@ -62,10 +63,11 @@ async fn main() {
 
     match (m.opt_str("i"), m.opt_str("c"), m.opt_str("s")) {
         (Some(appid), Some(slack_token), Some(coordinates)) => {
+            let channel = m.opt_str("C").unwrap_or("#weather".to_string());
             if m.opt_present("w") {
-                watch(&appid, &slack_token, &coordinates).await;
+                watch(&appid, &slack_token, &channel, &coordinates).await;
             } else {
-                check_rainfall(&appid, &slack_token, &coordinates).await;
+                check_rainfall(&appid, &slack_token, &channel, &coordinates).await;
             }
         },
         _ => println!("No required options"),

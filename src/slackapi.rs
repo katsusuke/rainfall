@@ -10,11 +10,11 @@ struct SlackPostMessagePayload {
     username: String
 }
 
-pub async fn post2slack(token: impl Into<String>, text: impl Into<String>) -> surf::Result<()> {
+pub async fn post2slack(token: impl Into<String>, channel: impl Into<String>, text: impl Into<String>) -> surf::Result<()> {
     let url = "https://slack.com/api/chat.postMessage";
     let body = SlackPostMessagePayload {
         token: token.into(),
-        channel: "#weather".into(),
+        channel: channel.into(),
         text: text.into(),
         icon_emoji: ":rain_cloud:".into(),
         username: "雨ですよBot".into()
