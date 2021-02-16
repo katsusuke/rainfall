@@ -36,11 +36,11 @@ fn message_for_rainfail(w: &yahooapi::Weather, coordinates: &str) -> String {
     return message;
 }
 
-async fn check_rainfall(appid: &str, coordinates: &str, slack_url: &str) -> Duration {
+async fn check_rainfall(appid: &str, coordinates: &str, slack_token: &str, channel: &str) -> Duration {
     let default_wait = Duration::from_secs(60 * 10);
     if let Ok(Some(w)) = yahooapi::find_rainfail(appid, coordinates).await {
         let message = message_for_rainfail(&w, coordinates);
-        let _ = slackapi::post_webhook(slack_url, message).await;
+        let _ = slackapi::post_message(slack_token, channel, message).await;
         let now = Local::now().naive_utc();
         let duration = (w.date + chrono::Duration::seconds(60 * 60 * 6)) - now;
         duration.to_std().unwrap_or(default_wait)
@@ -49,9 +49,9 @@ async fn check_rainfall(appid: &str, coordinates: &str, slack_url: &str) -> Dura
     }
 }
 
-async fn watch(appid: &str, coordinates: &str, slack_url: &str) -> Duration {
+async fn watch(appid: &str, coordinates: &str, slack_token: &str, channel: &str) -> Duration {
     loop {
-        let wait = check_rainfall(appid, coordinates, slack_url).await;
+        let wait = check_rainfall(appid, coordinates, slack_token, channel).await;
         println!("sleep: {}secs", wait.as_secs());
         task::sleep(wait).await;
     }
@@ -63,8 +63,10 @@ async fn main() {
     let mut opts = Options::new();
     opts.optopt("i", "appid", "Yahho! JAPAN appid(Required)", "APPID");
     opts.optopt("c", "coordinates", "longitude,latitude(Required)", "LONGITUDE,LATITUDE");
-    opts.optopt("s", "slack-url", "Slack Incomming Webhook URL(Required)", "WEBHOOK_URL");
+    opts.optopt("s", "slack-token", "Bot User OAuth Access Token(Required)", "WEBHOOK_URL");
+    opts.optopt("C", "slack-channel", "Slack Channel(default: weather)", "TOKEN");
     opts.optflag("w", "watch", "Service mode");
+    opts.optflag("t", "slack-test", "Testing Slack API");
     opts.optflag("h", "help", "print this help menu");
 
     let m = match opts.parse(&args[1..]) {
@@ -78,12 +80,28 @@ async fn main() {
         return;
     }
 
+    if m.opt_present("t") {
+        match m.opt_str("s") {
+            Some(slack_token) => {
+                let channel = m.opt_str("C").unwrap_or("#weather".to_string());
+                if let Ok(res) = slackapi::post_message(slack_token, channel, "Hello slack!").await {
+                    println!("res: {}", res);
+                } else {
+                    println!("Api error!");
+                }
+            }
+            _ => println!("-s option required")
+        }
+        return;
+    }
+
     match (m.opt_str("i"), m.opt_str("c"), m.opt_str("s")) {
-        (Some(appid), Some(slack_url), Some(coordinates)) => {
+        (Some(appid), Some(coordinates), Some(slack_token)) => {
+            let channel = m.opt_str("C").unwrap_or("#weather".to_string());
             if m.opt_present("w") {
-                watch(&appid, &slack_url, &coordinates).await;
+                watch(&appid, &slack_token, &channel, &coordinates).await;
             } else {
-                check_rainfall(&appid, &slack_url, &coordinates).await;
+                check_rainfall(&appid, &slack_token, &channel, &coordinates).await;
             }
         },
         _ => println!("No required options"),
