@@ -14,7 +14,7 @@ fn print_usage(program: &str, opts: Options) {
 
 fn split_coordinates(coordinates: &str) -> Option<(&str, &str)> {
     let a = coordinates.split(',').collect::<Vec<&str>>();
-    if let &[lat, lon] = &a[..] {
+    if let &[lon, lat] = &a[..] {
         return Some((lon, lat));
     } else {
         return None;
@@ -62,7 +62,7 @@ async fn main() {
     let args: Vec<String> = env::args().collect();
     let mut opts = Options::new();
     opts.optopt("i", "appid", "Yahho! JAPAN appid(Required)", "APPID");
-    opts.optopt("c", "coordinates", "latitude,longitude(Required)", "LONGITUDE,LATITUDE");
+    opts.optopt("c", "coordinates", "longitude,latitude(Required)", "LONGITUDE,LATITUDE");
     opts.optopt("s", "slack-url", "Slack Incomming Webhook URL(Required)", "WEBHOOK_URL");
     opts.optflag("w", "watch", "Service mode");
     opts.optflag("h", "help", "print this help menu");

@@ -7,7 +7,7 @@ It detects rainy weather and notifies your slack.
 ```
 git clone git@github.com:katsusuke/rainfall.git
 cd rainfall
-cargo run -- -i YOUR_YAHOO_JAPAN_APPID -s SLACK_INCOMING_WEBHOOK_URL -c 35.6835749,139.7508397 -w
+cargo run -- -i YOUR_YAHOO_JAPAN_APPID -s SLACK_INCOMING_WEBHOOK_URL -c 139.7508397,35.6835749 -w
 ```
 
 ## -i: Yahoo! JAPAN APPID
