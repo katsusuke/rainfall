@@ -40,7 +40,7 @@ async fn check_rainfall(appid: &str, coordinates: &str, slack_url: &str) -> Dura
     let default_wait = Duration::from_secs(60 * 10);
     if let Ok(Some(w)) = yahooapi::find_rainfail(appid, coordinates).await {
         let message = message_for_rainfail(&w, coordinates);
-        let _ = slackapi::post2slack(slack_url, message).await;
+        let _ = slackapi::post_webhook(slack_url, message).await;
         let now = Local::now().naive_utc();
         let duration = (w.date + chrono::Duration::seconds(60 * 60 * 6)) - now;
         duration.to_std().unwrap_or(default_wait)

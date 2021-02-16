@@ -3,16 +3,12 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
 struct SlackPostMessagePayload {
-    text: String,
-    icon_emoji: String,
-    username: String
+    text: String
 }
 
-pub async fn post2slack(url: impl Into<String>, text: impl Into<String>) -> surf::Result<()> {
+pub async fn post_webhook(url: impl Into<String>, text: impl Into<String>) -> surf::Result<()> {
     let body = SlackPostMessagePayload {
-        text: text.into(),
-        icon_emoji: ":rain_cloud:".into(),
-        username: "雨ですよBot".into()
+        text: text.into()
     };
     let body_str = serde_json::to_string(&body).unwrap();
     let u = url.into();
