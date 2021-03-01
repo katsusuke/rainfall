@@ -99,9 +99,9 @@ async fn main() {
         (Some(appid), Some(coordinates), Some(slack_token)) => {
             let channel = m.opt_str("C").unwrap_or("#weather".to_string());
             if m.opt_present("w") {
-                watch(&appid, &slack_token, &channel, &coordinates).await;
+                watch(&appid, &coordinates, &slack_token, &channel).await;
             } else {
-                check_rainfall(&appid, &slack_token, &channel, &coordinates).await;
+                check_rainfall(&appid, &coordinates, &slack_token, &channel).await;
             }
         },
         _ => println!("No required options"),
